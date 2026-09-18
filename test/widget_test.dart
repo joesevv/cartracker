@@ -31,7 +31,7 @@ void main() {
     expect(find.byType(ListTile), findsWidgets);
 
     // Nothing is saved yet, so every tile shows the unset subtitle.
-    expect(find.text('Not set yet'), findsWidgets);
+    expect(find.text('No services logged yet'), findsWidgets);
   });
 
   testWidgets('Tapping an item opens the service log', (
@@ -53,6 +53,6 @@ void main() {
     // Dismiss it and verify it is gone.
     await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
     await tester.pumpAndSettle();
-    expect(find.byType(DatePickerDialog), findsNothing);
+    expect(find.text('Log service'), findsNothing);
   });
 }
