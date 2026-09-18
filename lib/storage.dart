@@ -1,46 +1,37 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'maintenance_item.dart';
-const _key = 'maintenance_data';
-//this file allows for saving progress through json strings, obviously not that many values to keep so a db is overkill
-Future<Map<String, DateTime?>> load() async {
+
+const _vehiclesKey = 'vehicle_profiles_v2';
+const _legacyKey = 'maintenance_data';
+
+Future<List<VehicleProfile>> loadVehicles() async {
   final prefs = await SharedPreferences.getInstance();
-  final raw = prefs.getString(_key);
-  if (raw == null) return {};
-  Object? decoded;
-  try {
-    decoded = jsonDecode(raw);
-  } catch (_) {
-    return {};
+  final raw = prefs.getString(_vehiclesKey);
+  if (raw != null) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) return decoded.whereType<Map>().map((entry) => VehicleProfile.fromJson(Map<String, dynamic>.from(entry))).toList();
+    } catch (_) {}
   }
-  if (decoded is! Map) return {};
-  final result = <String, DateTime?>{};
-  for (final entry in decoded.entries) {
-    final key = entry.key;
-    if (key is! String) continue;
-    final value = entry.value;
-    if (value is String) {
-      final parsed = DateTime.tryParse(value);
-      result[key] = parsed == null ? null : dateOnly(parsed);
-    } else {
-      result[key] = null;
-    }
+  final legacy = prefs.getString(_legacyKey);
+  if (legacy != null) {
+    try {
+      final decoded = jsonDecode(legacy);
+      if (decoded is Map) {
+        final items = kDefaultItems.map((item) {
+          final value = decoded[item.name];
+          final date = value is String ? DateTime.tryParse(value) : null;
+          return date == null ? item : item.withLastDone(date);
+        }).toList();
+        return [newVehicle(name: 'My vehicle', description: '', mileage: 0).copyWith(items: items)];
+      }
+    } catch (_) {}
   }
-  return result;
+  return [newVehicle(name: 'My vehicle', description: '', mileage: 0)];
 }
 
-Future<void> save(List<MaintenanceItem> items) async {
+Future<void> saveVehicles(List<VehicleProfile> vehicles) async {
   final prefs = await SharedPreferences.getInstance();
-  final data = <String, String?>{
-    for (final item in items)
-      item.name: item.lastDone == null ? null : _formatDate(item.lastDone!),
-  };
-  await prefs.setString(_key, jsonEncode(data));
-}
-
-String _formatDate(DateTime date) {
-  final year = date.year.toString().padLeft(4, '0');
-  final month = date.month.toString().padLeft(2, '0');
-  final day = date.day.toString().padLeft(2, '0');
-  return '$year-$month-$day';
+  await prefs.setString(_vehiclesKey, jsonEncode(vehicles.map((vehicle) => vehicle.toJson()).toList()));
 }

@@ -34,7 +34,7 @@ void main() {
     expect(find.text('Not set yet'), findsWidgets);
   });
 
-  testWidgets('Tapping an item opens the date picker', (
+  testWidgets('Tapping an item opens the service log', (
       WidgetTester tester,
       ) async {
     SharedPreferences.setMockInitialValues({});
@@ -47,8 +47,8 @@ void main() {
     await tester.tap(find.text('Oil change'));
     await tester.pumpAndSettle();
 
-    // Verify the date picker opened.
-    expect(find.byType(DatePickerDialog), findsOneWidget);
+    // Verify the service log opened.
+    expect(find.text('Log service'), findsOneWidget);
 
     // Dismiss it and verify it is gone.
     await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
